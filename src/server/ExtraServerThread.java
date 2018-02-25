@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 
-public class ServerThread extends Thread {
+public class ExtraServerThread extends Thread {
 	protected Socket clientSocket;
 	protected String currentID;
 	protected boolean terminateThread;
@@ -15,7 +15,7 @@ public class ServerThread extends Thread {
 		return clientSocket;
 	}
 
-	public ServerThread(Socket connectionSocket) {
+	public ExtraServerThread(Socket connectionSocket) {
 		this.clientSocket = connectionSocket;
 		this.terminateThread = false;
 	}
@@ -35,23 +35,23 @@ public class ServerThread extends Thread {
 			while (true) {
 				messageReceived = inFromClient.readLine();
 				if (messageReceived.equals("Quit")) {
-					Server.clientsList.remove(this.currentID);
-					Server.serverInitiator.sendMemebers();
+					ExtraServer.clientsList.remove(this.currentID);
+					ExtraServer.extraServerInitiator.sendMemebers();
 					System.out.println("--Internal-- Removed " + this.currentID + " from the member's list");
 					clientSocket.close();
 					return;
 				}
 
 				if (messageReceived.equals("GetMemberList()")) {
-					Object[] tempClients = Server.clientsList.keySet().toArray();
+					Object[] tempClients = ExtraServer.clientsList.keySet().toArray();
 					outToClient.writeBytes("The current online members are : \n");
 					for (int i = 0; i < tempClients.length; i++) {
 						outToClient.writeBytes("	 - " + tempClients[i] + "\n");
 					}
-					if (!Server.otherServerClients.isEmpty()) {
+					if (!ExtraServer.otherServerClients.isEmpty()) {
 						outToClient.writeBytes("======= On the other server =======\n");
-						for (int i = 0; i < Server.otherServerClients.size(); i++) {
-							outToClient.writeBytes("	 - " + Server.otherServerClients.get(i) + "\n");
+						for (int i = 0; i < ExtraServer.otherServerClients.size(); i++) {
+							outToClient.writeBytes("	 - " + ExtraServer.otherServerClients.get(i) + "\n");
 						}
 					}
 
@@ -62,12 +62,13 @@ public class ServerThread extends Thread {
 					String dest = params[1];
 					String msg = params[2];
 					int TTL = Integer.parseInt(params[3]);
-					if (Server.clientsList.containsKey(dest)) {
-						Socket tempSocket = Server.clientsList.get(dest).getClientSocket();
+					if (ExtraServer.clientsList.containsKey(dest)) {
+						Socket tempSocket = ExtraServer.clientsList.get(dest).getClientSocket();
 						DataOutputStream outToTemp = new DataOutputStream(tempSocket.getOutputStream());
 						outToTemp.writeBytes(currentID + " : " + msg + "\n");
 					} else {
-						Server.serverInitiator.route("Chat(" + src + "," + dest + "," + msg + "," + (TTL - 1) + ")");
+						ExtraServer.extraServerInitiator
+								.route("Chat(" + src + "," + dest + "," + msg + "," + (TTL - 1) + ")");
 
 					}
 				} else {
@@ -102,12 +103,12 @@ public class ServerThread extends Thread {
 				if (messageReceived.length() < 7 || !(messageReceived.substring(0, 5).equals("Join(")
 						&& messageReceived.charAt(messageReceived.length() - 1) == ')')) {
 					outToClient.writeBytes("Your message need to be of the format 'Join(Username)' \n");
-				} else if (Server.clientsList.containsKey(ID) || Server.otherServerClients.contains(ID)) {
+				} else if (ExtraServer.clientsList.containsKey(ID) || ExtraServer.otherServerClients.contains(ID)) {
 					outToClient.writeBytes("Username already in use, please choose another one \n");
 				} else {
 					this.currentID = messageReceived.substring(5, messageReceived.length() - 1);
-					Server.clientsList.put(this.currentID, this);
-					Server.serverInitiator.sendMemebers();
+					ExtraServer.clientsList.put(this.currentID, this);
+					ExtraServer.extraServerInitiator.sendMemebers();
 					System.out.println("--Internal-- Added " + this.currentID + " to the member's list");
 					outToClient.writeBytes("You have successfully joined. Welcome " + this.currentID + "\n");
 					break;

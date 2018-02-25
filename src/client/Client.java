@@ -7,7 +7,9 @@ import java.net.Socket;
 
 public class Client {
 	public static void main(String[] args) throws Exception {
-		Socket clientSocket = new Socket("127.0.0.1", 5555);
+		System.out.println("========= CLIENT#1 SERVER2 =========");
+
+		Socket clientSocket = new Socket("127.0.0.1", 4444);
 		ClientListeningThread clientListeningThread = new ClientListeningThread(clientSocket);
 		clientListeningThread.start(); // Thread for listening to server, and
 										// printing it out.
@@ -21,7 +23,11 @@ public class Client {
 			messageToBeSent = inFromUser.readLine();
 			outToServer.writeBytes(messageToBeSent + '\n');
 			if (messageToBeSent.equals("Quit")) {
-				clientListeningThread.setTerminateThread(true); //This ensures closing the socket as well inside the thread.
+				clientListeningThread.setTerminateThread(true); // This ensures
+																// closing the
+																// socket as
+																// well inside
+																// the thread.
 				System.out.println("See you later :)");
 				break;
 			}
