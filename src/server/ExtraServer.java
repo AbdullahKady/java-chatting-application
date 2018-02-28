@@ -106,15 +106,32 @@ class ExtraServerListener extends Thread {
 					String src = params[0];
 					String dest = params[1];
 					String msg = params[2];
-					// int TTL = Integer.parseInt(params[3]); USELESS!
-					if (ExtraServer.clientsList.containsKey(dest)) {
-						Socket tempSocket = ExtraServer.clientsList.get(dest).getClientSocket();
-						DataOutputStream outToClient = new DataOutputStream(tempSocket.getOutputStream());
-						outToClient.writeBytes(src + " : " + msg + "\n");
+					int TTL = Integer.parseInt(params[3]);
 
+					if (TTL >= 0) { // In case the source disconnected.
+						// Message shouldn't loop forever
+						// (negative values).
+						if (TTL == 0 && !src.equals("ERROR")) {
+							if (!ExtraServer.clientsList.containsKey(src))
+								ExtraServer.extraServerInitiator.route("Chat(" + "ERROR," + src
+										+ ",Wrong destination specified. you can type'GetMemberList()' to get a list of the current online members,2)\n");
+							else {
+								Socket tempSocket = ExtraServer.clientsList.get(src).getClientSocket();
+								DataOutputStream outToTemp = new DataOutputStream(tempSocket.getOutputStream());
+								outToTemp.writeBytes(
+										"Wrong destination specified. you can type'GetMemberList()' to get a list of the current online members\n");
+							}
+						} else {
+							if (ExtraServer.clientsList.containsKey(dest)) {
+								Socket tempSocket = ExtraServer.clientsList.get(dest).getClientSocket();
+								DataOutputStream outToTemp = new DataOutputStream(tempSocket.getOutputStream());
+								outToTemp.writeBytes(src + " : " + msg + "\n");
+							} else
+								ExtraServer.extraServerInitiator
+										.route("Chat(" + src + "," + dest + "," + msg + "," + (TTL - 1) + ")");
+						}
 					} else {
-						outToServer.writeBytes("Chat(ERROR," + src
-								+ ",Wrong destination specified. you can type 'GetMemberList()' to get a list of the current online members,0)\n");
+						System.out.println("--INTERNAL-- Message discarded without warning the user");
 					}
 
 				}

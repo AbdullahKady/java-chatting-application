@@ -65,7 +65,10 @@ public class ServerThread extends Thread {
 					if (Server.clientsList.containsKey(dest)) {
 						Socket tempSocket = Server.clientsList.get(dest).getClientSocket();
 						DataOutputStream outToTemp = new DataOutputStream(tempSocket.getOutputStream());
-						outToTemp.writeBytes(currentID + " : " + msg + "\n");
+						if (TTL > 0)
+							outToTemp.writeBytes(currentID + " : " + msg + "\n");
+						else
+							outToClient.writeBytes("TTL specified is too small!\n");
 					} else {
 						Server.serverInitiator.route("Chat(" + src + "," + dest + "," + msg + "," + (TTL - 1) + ")");
 

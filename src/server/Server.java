@@ -66,6 +66,7 @@ class ServerInitiator {
 	public void route(String chatMessage) {
 		try {
 			DataOutputStream outToServer = new DataOutputStream(connectionSocket.getOutputStream());
+			System.out.println("Routing : " + chatMessage);
 			outToServer.writeBytes(chatMessage + "\n");
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -105,16 +106,33 @@ class ServerListener extends Thread {
 					String src = params[0];
 					String dest = params[1];
 					String msg = params[2];
-					// int TTL = Integer.parseInt(params[3]); USELESS!
-					if (Server.clientsList.containsKey(dest)) {
-						Socket tempSocket = Server.clientsList.get(dest).getClientSocket();
-						DataOutputStream outToTemp = new DataOutputStream(tempSocket.getOutputStream());
-						outToTemp.writeBytes(src + " : " + msg + "\n");
-					} else {
-						outToServer.writeBytes("Chat(" + "ERROR," + src
-								+ ",Wrong destination specified. you can type 'GetMemberList()' to get a list of the current online members,0)\n");
-					}
+					int TTL = Integer.parseInt(params[3]);
 
+					if (TTL >= 0) { // In case the source disconnected.
+						// Message shouldn't loop forever
+						// (negative values).
+						if (TTL == 0 && !src.equals("ERROR")) {
+							if (!Server.clientsList.containsKey(src))
+								Server.serverInitiator.route("Chat(" + "ERROR," + src
+										+ ",Wrong destination specified. you can type'GetMemberList()' to get a list of the current online members,2)\n");
+							else {
+								Socket tempSocket = Server.clientsList.get(src).getClientSocket();
+								DataOutputStream outToTemp = new DataOutputStream(tempSocket.getOutputStream());
+								outToTemp.writeBytes(
+										"Wrong destination specified. you can type'GetMemberList()' to get a list of the current online members\n");
+							}
+						} else {
+							if (Server.clientsList.containsKey(dest)) {
+								Socket tempSocket = Server.clientsList.get(dest).getClientSocket();
+								DataOutputStream outToTemp = new DataOutputStream(tempSocket.getOutputStream());
+								outToTemp.writeBytes(src + " : " + msg + "\n");
+							} else
+								Server.serverInitiator
+										.route("Chat(" + src + "," + dest + "," + msg + "," + (TTL - 1) + ")");
+						}
+					} else {
+						System.out.println("--INTERNAL-- Message discarded without warning the user");
+					}
 				}
 			}
 		} catch (Exception e) {

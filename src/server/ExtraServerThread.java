@@ -65,7 +65,10 @@ public class ExtraServerThread extends Thread {
 					if (ExtraServer.clientsList.containsKey(dest)) {
 						Socket tempSocket = ExtraServer.clientsList.get(dest).getClientSocket();
 						DataOutputStream outToTemp = new DataOutputStream(tempSocket.getOutputStream());
-						outToTemp.writeBytes(currentID + " : " + msg + "\n");
+						if (TTL > 0)
+							outToTemp.writeBytes(currentID + " : " + msg + "\n");
+						else
+							outToClient.writeBytes("TTL specified is too small!\n");
 					} else {
 						ExtraServer.extraServerInitiator
 								.route("Chat(" + src + "," + dest + "," + msg + "," + (TTL - 1) + ")");
