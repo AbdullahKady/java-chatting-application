@@ -2,35 +2,65 @@ package client;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
 public class Client {
-	public static void main(String[] args) throws Exception {
-		System.out.println("========= CLIENT#1 SERVER2 =========");
+	ClientGUI gui;
+	ClientListeningThread clientListeningThread;
+	Socket clientSocket;
+	private boolean ready;
+	String username;
+	private String[] members;
 
-		Socket clientSocket = new Socket("127.0.0.1", 4444);
-		ClientListeningThread clientListeningThread = new ClientListeningThread(clientSocket);
-		clientListeningThread.start(); // Thread for listening to server, and
-										// printing it out.
+	public void setGUI(ClientGUI gui) {
+		this.gui = gui;
+		this.ready = true;
+	}
 
-		// Listening to the user input, and sending it to the server
-		String messageToBeSent;
-		DataOutputStream outToServer = new DataOutputStream(clientSocket.getOutputStream());
-		BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
+	public Client(String username, int port) throws UnknownHostException, IOException, usernameException {
+		this.username = username;
+		this.clientSocket = new Socket("127.0.0.1", port);
+		DataOutputStream outToServer = new DataOutputStream(this.clientSocket.getOutputStream());
+		BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+		String messageReceived;
+		outToServer.writeBytes("Join(" + username + ")\n");
+		messageReceived = inFromServer.readLine();
+		System.out.println("message: " + messageReceived);
+		if (messageReceived.startsWith("Username already in use")) {
+			throw new usernameException("USED");
+		}
+		clientListeningThread = new ClientListeningThread(this, clientSocket);
+		clientListeningThread.start();
+	}
 
-		while (true) {
-			messageToBeSent = inFromUser.readLine();
-			outToServer.writeBytes(messageToBeSent + '\n');
-			if (messageToBeSent.equals("Quit")) {
-				clientListeningThread.setTerminateThread(true); // This ensures
-																// closing the
-																// socket as
-																// well inside
-																// the thread.
-				System.out.println("See you later :)");
-				break;
-			}
+	public void sendMessage(String messageToBeSent) throws IOException {
+		DataOutputStream outToServer = new DataOutputStream(this.clientSocket.getOutputStream());
+		outToServer.writeBytes(messageToBeSent + '\n');
+		if (messageToBeSent.equals("Quit")) {
+			this.clientListeningThread.setTerminateThread(true);
+			return;
+		}
+	}
+
+	public void print(String messageReceived) {
+		this.gui.msgArea.setText(this.gui.msgArea.getText() + '\n' + messageReceived);
+	}
+
+	public boolean isReady() {
+		return this.ready;
+	}
+
+	public void setList(String[] split) {
+		this.members = split;
+
+	}
+
+	public class usernameException extends Exception {
+		public usernameException(String arg0) {
+			super(arg0);
 		}
 	}
 }
